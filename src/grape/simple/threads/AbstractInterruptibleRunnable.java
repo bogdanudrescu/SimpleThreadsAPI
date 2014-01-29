@@ -2,15 +2,15 @@ package grape.simple.threads;
 
 /**
  * Abstract implementation of the InterruptibleRunnable including the cancel/pause functionality. What's left in the subclasses is to
- * implement the {@link #execute()} method for your functionality and to check the interruption from time to time simply calling 
+ * implement the {@link #execute()} method with your functionality and to check the interruption from time to time by simply calling 
  * {@link #checkInterruption()}.
  * <br/>
  * Please make the utmost not to surround the code calling {@link #checkInterruption()} with a try/catch on {@link Exception}, as this 
  * will block the interruption in case of a cancel call. The {@link #checkInterruption()} is actually throwing a {@link CancelException} 
- * that should be caught in {@link #run()}, this being is the trick used to cancel the execution.
+ * that should be caught in {@link #run()}, which is the trick used to cancel the execution.
  * <br/>
- * In case of pause, simply calling pause will block the execution of the thread at the next {@link #checkInterruption()} call. A pause can be 
- * call off with a {@link #restart()} call.
+ * In case of pause, simply calling {@link #pause()} will block the execution of the thread at the next {@link #checkInterruption()} call. 
+ * A pause can be call off with a {@link #restart()} call.
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com) 
  */
