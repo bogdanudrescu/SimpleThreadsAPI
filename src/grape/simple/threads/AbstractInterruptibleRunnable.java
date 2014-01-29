@@ -53,6 +53,10 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 
 	/**
 	 * Write here any piece of code your process must execute, that normally you'd write in the {@link #run()} method.
+	 * <br/>
+	 * Also make sure to call constantly {@link #checkInterruption()} to stop or pause your process when this is required.
+	 * And make sure that at any level, these calls are not surrounded with a try/catch on {@link Exception},
+	 * otherwise the cancel operation won't work.
 	 */
 	protected abstract void execute();
 
