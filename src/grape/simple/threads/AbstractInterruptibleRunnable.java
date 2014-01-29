@@ -22,6 +22,11 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	@Override
 	public final void run() {
 
+		// Set the state to RUNNING, because the process just started.
+		//
+		// We keep the NOT_RUNNING state just to make the difference between the CANCEL and the 
+		// initial state of the process. It's a bit weird to say that the initial state before running,
+		// is CANCELED, while the process never run.
 		synchronized (this) {
 			if (state == NOT_RUNNING) {
 				state = RUNNING;
