@@ -165,7 +165,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		if (isPaused()) {
 			synchronized (this) {
 
-				// Double check lock to make sure we're not messing to notify() with the wait().
+				// Double check after lock to make sure we're not messing notify() with wait().
 				if (isPaused()) {
 					try {
 						wait();
