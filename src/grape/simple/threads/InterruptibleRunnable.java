@@ -22,6 +22,12 @@ public interface InterruptibleRunnable extends Runnable {
 	boolean isPaused();
 
 	/**
+	 * Gets whether the process is running.
+	 * @return	true if the process is running.
+	 */
+	boolean isRunning();
+
+	/**
 	 * Cancel the current execution of this runnable.
 	 */
 	void cancel();

@@ -12,7 +12,8 @@ package grape.simple.threads;
  * In case of pause, simply calling {@link #pause()} will block the execution of the thread at the next {@link #checkInterruption()} call. 
  * A pause can be call off with a {@link #restart()} call.
  * 
- * @author Bogdan Udrescu (bogdan.udrescu@gmail.com) 
+ * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
+ * @author Stefan Voinea (stefanvlad.voinea@gmail.com) 
  */
 public abstract class AbstractInterruptibleRunnable implements InterruptibleRunnable {
 
@@ -83,7 +84,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	/*
 	 * The state.
 	 */
-	private int state = NOT_RUNNING;
+	private volatile int state = NOT_RUNNING;
 
 	/**
 	 * Gets the state of the process.
@@ -101,7 +102,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * @see com.bright55.thread.CancelableRunnable#isCanceled()
 	 */
 	@Override
-	public synchronized boolean isCanceled() {
+	public boolean isCanceled() {
 		return state == CANCELED;
 	}
 
@@ -109,8 +110,16 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * @see com.bright55.thread.CancelableRunnable#isPaused()
 	 */
 	@Override
-	public synchronized boolean isPaused() {
+	public boolean isPaused() {
 		return state == PAUSED;
+	}
+
+	/* (non-Javadoc)
+	 * @see grape.simple.threads.InterruptibleRunnable#isRunning()
+	 */
+	@Override
+	public boolean isRunning() {
+		return state == RUNNING;
 	}
 
 	/* (non-Javadoc)
@@ -148,21 +157,33 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 
 	/**
 	 * If runnable should cancel this will throw an exception.<br/>
-	 * If it should pause it will block the execution until the next restart.
+	 * If it should pause it will block the execution until the next restart.<br/>
+	 * Call this method only from the {@link Thread} executing this runnable.
 	 */
-	protected synchronized void checkInterruption() {
+	protected void checkInterruption() {
 
 		if (isPaused()) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+			synchronized (this) {
+
+				// Double check lock to make sure we're not messing to notify() with the wait().
+				if (isPaused()) {
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 
 		// Don't do it with an else because if cancel after pause, this should throw the exception here and cancel the process.
 		if (isCanceled()) {
-			throw new CancelException();
+			synchronized (this) {
+
+				if (isCanceled()) {
+					throw new CancelException();
+				}
+			}
 		}
 
 	}
