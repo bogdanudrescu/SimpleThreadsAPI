@@ -31,6 +31,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		synchronized (this) {
 			if (state == NOT_RUNNING) {
 				state = RUNNING;
+				realState = RUNNING;
 			}
 		}
 
@@ -86,6 +87,11 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 */
 	private volatile int state = NOT_RUNNING;
 
+	/*
+	 * The real state, according with the exact time the process actually gets paused or canceled.
+	 */
+	private volatile int realState = NOT_RUNNING;
+
 	/**
 	 * Gets the state of the process.
 	 * @return	the state of the process.
@@ -96,6 +102,18 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 */
 	public int getState() {
 		return state;
+	}
+
+	/**
+	 * Gets the real state of the process.
+	 * @return	the real state of the process.
+	 * @see #NOT_RUNNING
+	 * @see #RUNNING
+	 * @see #PAUSED
+	 * @see #CANCELED
+	 */
+	public int getRealState() {
+		return realState;
 	}
 
 	/* (non-Javadoc)
@@ -127,7 +145,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 */
 	@Override
 	public synchronized void cancel() {
-		boolean paused = isPaused();
+		boolean paused = state == PAUSED;
 		state = CANCELED;
 
 		if (paused) {
@@ -150,9 +168,12 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	public synchronized void restart() {
 		if (state == PAUSED) {
 			notify();
+			state = RUNNING;
+
+		} else if (state == CANCELED) {
+			state = NOT_RUNNING;
 		}
 
-		state = RUNNING;
 	}
 
 	/**
@@ -162,25 +183,31 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 */
 	protected void checkInterruption() {
 
-		if (isPaused()) {
+		if (state == PAUSED) {
 			synchronized (this) {
 
 				// Double check after lock to make sure we're not messing notify() with wait().
-				if (isPaused()) {
+				if (state == PAUSED) {
 					try {
+						realState = PAUSED;
+
 						wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+
+					realState = RUNNING;
 				}
 			}
 		}
 
 		// Don't do it with an else because if cancel after pause, this should throw the exception here and cancel the process.
-		if (isCanceled()) {
+		if (state == CANCELED) {
 			synchronized (this) {
 
-				if (isCanceled()) {
+				if (state == CANCELED) {
+					realState = CANCELED;
+
 					throw new CancelException();
 				}
 			}
