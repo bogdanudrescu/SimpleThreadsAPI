@@ -83,9 +83,13 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 
 		connection = url.openConnection();
 
+		System.out.println("Connecting to " + urlToDownload);
+
 		// Read the lenght of the download content.
 		String contentLengthString = connection.getHeaderField("Content-Length");
 		long contentLength = Long.parseLong(contentLengthString);
+
+		System.out.println("Connection established!");
 
 		checkInterruption();
 
@@ -117,7 +121,7 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 	@Override
 	protected void executed() {
 
-		System.out.println("executed");
+		System.out.println("Donwload finished.");
 
 		try {
 			if (outputStream != null) {
@@ -143,6 +147,7 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 	public synchronized void cancel() {
 
 		connection.setConnectTimeout(1);
+		connection.setReadTimeout(1);
 
 		super.cancel();
 	}

@@ -36,10 +36,9 @@ public class TestInterruptionDownload extends TestInterruption {
 	 * Create a simple test to download a file.
 	 */
 	public TestInterruptionDownload() {
-		super();
+		setTitle("URL Download Interruption Test");
 
-		//		urlTextField = new JTextField("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz");
-		urlTextField = new JTextField("http://weather.aeroplus.nl/");
+		urlTextField = new JTextField("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz");
 		fileTextField = new JTextField("foo.dat");
 
 		JPanel panel = new JPanel(new GridBagLayout());

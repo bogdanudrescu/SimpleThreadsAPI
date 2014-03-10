@@ -109,7 +109,6 @@ public class TestInterruption extends JFrame implements ActionListener {
 			// Stop.
 		} else if (e.getSource() == stop) {
 			process.cancel();
-			process = null;
 		}
 	}
 
@@ -135,7 +134,6 @@ public class TestInterruption extends JFrame implements ActionListener {
 		if (process == null) {
 
 			progressView.setVisible(false);
-
 			refreshButtonsStatus(true, false, false);
 
 		} else {
@@ -144,8 +142,10 @@ public class TestInterruption extends JFrame implements ActionListener {
 				case AbstractInterruptibleRunnable.NOT_RUNNING:
 				case AbstractInterruptibleRunnable.CANCELED:
 
-					progressView.setVisible(false);
+					process.destroy();
+					process = null;
 
+					progressView.setVisible(false);
 					refreshButtonsStatus(true, false, false);
 					break;
 
