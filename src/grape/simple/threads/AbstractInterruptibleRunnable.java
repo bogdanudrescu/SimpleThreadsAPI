@@ -1,19 +1,22 @@
 package grape.simple.threads;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+
 /**
  * Abstract implementation of the InterruptibleRunnable including the cancel/pause functionality. What's left in the subclasses is to
  * implement the {@link #execute()} method with your functionality and to check the interruption from time to time by simply calling 
  * {@link #checkInterruption()}.
  * <br/>
- * Please make the utmost not to surround the code calling {@link #checkInterruption()} with a try/catch on {@link Exception}, as this 
- * will block the interruption in case of a cancel call. The {@link #checkInterruption()} is actually throwing a {@link CancelException} 
+ * Please make sure not to surround the code calling {@link #checkInterruption()} with a try/catch on {@link Exception}, as this 
+ * will block the interruption in case of a CANCEL call. The {@link #checkInterruption()} is actually throwing a {@link CancelException} 
  * that should be caught in {@link #run()}, which is the trick used to cancel the execution.
  * <br/>
  * In case of pause, simply calling {@link #pause()} will block the execution of the thread at the next {@link #checkInterruption()} call. 
- * A pause can be call off with a {@link #restart()} call.
+ * A pause can be call off with a {@link #resume()} call.
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
- * @author Stefan Voinea (stefanvlad.voinea@gmail.com) 
+ * @thanks Stefan Voinea (stefanvlad.voinea@gmail.com) 
  */
 public abstract class AbstractInterruptibleRunnable implements InterruptibleRunnable {
 
@@ -29,9 +32,9 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		// initial state of the process. It's a bit weird to say that the initial state before running,
 		// is CANCELED, while the process never run.
 		synchronized (this) {
-			if (state == NOT_RUNNING) {
-				state = RUNNING;
-				realState = RUNNING;
+			if (realState == NOT_RUNNING) {
+				setState(RUNNING);
+				setRealState(RUNNING);
 			}
 		}
 
@@ -46,11 +49,38 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 			// Do nothing, the process was canceled with a reason.
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			exception = e;
 
 		} finally {
-			// Do nothing for now.
+
+			// Finalize the process.
+			executed();
+
+			// Finally set the state back to NOT_RUNNING, only and only if the current state is RUNNING.
+			// In case of a CANCEL state we want to keep the CANCEL state as current, to let the user know that the 
+			// process was terminated by a user call.
+			synchronized (this) {
+				if (realState == RUNNING) {
+					setState(NOT_RUNNING);
+					setRealState(NOT_RUNNING);
+				}
+			}
+
 		}
+
+	}
+
+	/*
+	 * Exception caught in run.
+	 */
+	private Exception exception;
+
+	/**
+	 * Gets exception caught in the run implementation.
+	 * @return	an exception rose while performing, if any.
+	 */
+	public Exception getException() {
+		return exception;
 	}
 
 	/**
@@ -59,8 +89,59 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * Also make sure to call constantly {@link #checkInterruption()} to stop or pause your process when this is required.
 	 * And make sure that at any level, these calls are not surrounded with a try/catch on {@link Exception},
 	 * otherwise the cancel operation won't work.
+	 * @throws Exception	any exception that might occur.
 	 */
-	protected abstract void execute();
+	protected abstract void execute() throws Exception;
+
+	/**
+	 * This method gets called on the finally block, at the end of run method.
+	 * <br/>
+	 * We don't need this method abstract because some times you don't need to do any destruction at the end of the process.
+	 */
+	protected void executed() {
+		// Override this and perform any destruction. But do it fast, you don't need to keep this call to long.
+		// 
+		// Any exception handling should be done by the implementor of this method.
+	}
+
+	/**
+	 * If runnable should cancel this will throw an exception.<br/>
+	 * If it should pause it will block the execution until the next restart.<br/>
+	 * Call this method only from the {@link Thread} executing this runnable.
+	 */
+	protected void checkInterruption() {
+
+		if (state == PAUSED) {
+			synchronized (this) {
+
+				// Double check after lock to make sure we're not messing notify() with wait().
+				if (state == PAUSED) {
+					try {
+						setRealState(PAUSED);
+
+						wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+					setRealState(RUNNING);
+				}
+			}
+		}
+
+		// Don't do it with an else because if cancel after pause, this should throw the exception here and cancel the process.
+		if (state == CANCELED) {
+			synchronized (this) {
+
+				if (state == CANCELED) {
+					setRealState(CANCELED);
+
+					throw new CancelException();
+				}
+			}
+		}
+
+	}
 
 	/**
 	 * The initial state of the process.
@@ -104,6 +185,17 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		return state;
 	}
 
+	/*
+	 * Final call to set the state of the process.
+	 */
+	private void setState(int state) {
+		int oldState = this.state;
+
+		this.state = state;
+
+		firePropertyChange("state", oldState, state);
+	}
+
 	/**
 	 * Gets the real state of the process.
 	 * @return	the real state of the process.
@@ -116,8 +208,19 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		return realState;
 	}
 
+	/*
+	 * Final call to set the real state of the process.
+	 */
+	private void setRealState(int realState) {
+		int oldRealState = this.realState;
+
+		this.realState = realState;
+
+		firePropertyChange("realState", oldRealState, realState);
+	}
+
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#isCanceled()
+	 * @see grape.simple.threads.InterruptibleRunnable#isCanceled()
 	 */
 	@Override
 	public boolean isCanceled() {
@@ -125,7 +228,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#isPaused()
+	 * @see grape.simple.threads.InterruptibleRunnable#isPaused()
 	 */
 	@Override
 	public boolean isPaused() {
@@ -141,12 +244,13 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#cancel()
+	 * @see grape.simple.threads.InterruptibleRunnable#cancel()
 	 */
 	@Override
 	public synchronized void cancel() {
+
 		boolean paused = state == PAUSED;
-		state = CANCELED;
+		setState(CANCELED);
 
 		if (paused) {
 			notify();
@@ -154,76 +258,40 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#pause()
+	 * @see grape.simple.threads.InterruptibleRunnable#pause()
 	 */
 	@Override
 	public synchronized void pause() {
-		state = PAUSED;
+		setState(PAUSED);
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#restart()
+	 * @see grape.simple.threads.InterruptibleRunnable#resume()
 	 */
 	@Override
-	public synchronized void restart() {
-		if (state == PAUSED) {
-			notify();
-			state = RUNNING;
+	public synchronized void resume() {
 
-		} else if (state == CANCELED) {
-			state = NOT_RUNNING;
+		switch (state) {
+			case PAUSED:
+				notify();
+				setState(RUNNING);
+				break;
+
+			case CANCELED:
+				setState(NOT_RUNNING);
+				break;
 		}
-
-	}
-
-	/**
-	 * If runnable should cancel this will throw an exception.<br/>
-	 * If it should pause it will block the execution until the next restart.<br/>
-	 * Call this method only from the {@link Thread} executing this runnable.
-	 */
-	protected void checkInterruption() {
-
-		if (state == PAUSED) {
-			synchronized (this) {
-
-				// Double check after lock to make sure we're not messing notify() with wait().
-				if (state == PAUSED) {
-					try {
-						realState = PAUSED;
-
-						wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
-					realState = RUNNING;
-				}
-			}
-		}
-
-		// Don't do it with an else because if cancel after pause, this should throw the exception here and cancel the process.
-		if (state == CANCELED) {
-			synchronized (this) {
-
-				if (state == CANCELED) {
-					realState = CANCELED;
-
-					throw new CancelException();
-				}
-			}
-		}
-
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#destroy()
+	 * @see grape.simple.threads.InterruptibleRunnable#destroy()
 	 */
 	@Override
 	public void destroy() {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#getName()
+	 * @see grape.simple.threads.InterruptibleRunnable#getName()
 	 */
 	@Override
 	public String getName() {
@@ -231,11 +299,69 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	}
 
 	/* (non-Javadoc)
-	 * @see com.bright55.thread.CancelableRunnable#getDescription()
+	 * @see grape.simple.threads.InterruptibleRunnable#getDescription()
 	 */
 	@Override
 	public String getDescription() {
 		return "";
+	}
+
+	/*
+	 * Used to register property listeners and fire propery change events.
+	 */
+	private PropertyChangeSupport changeSupport;
+
+	/*
+	 * Ensure the property change support is valid.
+	 */
+	private PropertyChangeSupport ensureChangeSupport() {
+		PropertyChangeSupport changeSupport;
+
+		synchronized (this) {
+			if (this.changeSupport == null) {
+				this.changeSupport = new PropertyChangeSupport(this);
+			}
+			changeSupport = this.changeSupport;
+		}
+
+		return changeSupport;
+	}
+
+	/**
+	 * Notify the listeners that the specified property has been changed. 
+	 * @param propertyName	the property name.
+	 * @param oldValue		the old value of the property.
+	 * @param newValue		the new value of the property.
+	 */
+	protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+		PropertyChangeSupport changeSupport = null;
+
+		synchronized (this) {
+			changeSupport = this.changeSupport;
+		}
+
+		if (changeSupport != null) {
+			changeSupport.firePropertyChange(propertyName, oldValue, newValue);
+		}
+	}
+
+	/**
+	 * Register a listener that will be notified when the state of the process or any other property will change.
+	 * @param listener	the listener to be registered.
+	 */
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		PropertyChangeSupport changeSupport = ensureChangeSupport();
+		changeSupport.addPropertyChangeListener(listener);
+	}
+
+	/**
+	 * Register a listener that will be notified when the specified property will change.
+	 * @param propertyName	the name of the property.
+	 * @param listener		the listener to be registered.
+	 */
+	public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+		PropertyChangeSupport changeSupport = ensureChangeSupport();
+		changeSupport.addPropertyChangeListener(propertyName, listener);
 	}
 
 }

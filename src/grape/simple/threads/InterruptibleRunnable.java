@@ -40,7 +40,7 @@ public interface InterruptibleRunnable extends Runnable {
 	/**
 	 * Restart the runnable.
 	 */
-	void restart();
+	void resume();
 
 	/**
 	 * Gets the name of the task.

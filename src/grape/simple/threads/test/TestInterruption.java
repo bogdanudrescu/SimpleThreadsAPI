@@ -5,6 +5,8 @@ import grape.simple.threads.AbstractInterruptibleRunnable;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -18,9 +20,8 @@ import javax.swing.JProgressBar;
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com) 
  */
+@SuppressWarnings("serial")
 public class TestInterruption extends JFrame implements ActionListener {
-
-	private static final long serialVersionUID = 1L;
 
 	/*
 	 * The play/pause/stop buttons.
@@ -32,7 +33,7 @@ public class TestInterruption extends JFrame implements ActionListener {
 	/*
 	 * A process doing something.
 	 */
-	private AnimateProcess animateProcess;
+	private AbstractInterruptibleRunnable process;
 
 	/*
 	 * The progress view reference.
@@ -60,11 +61,24 @@ public class TestInterruption extends JFrame implements ActionListener {
 		controlPanel.add(pause);
 		controlPanel.add(stop);
 
+		progressView = new ProgressView();
+
 		getContentPane().setLayout(new BorderLayout());
 
 		getContentPane().add(controlPanel, BorderLayout.NORTH);
+		getContentPane().add(progressView, BorderLayout.SOUTH);
+
+		progressView.setVisible(false);
 
 		refreshButtonsStatus();
+	}
+
+	/**
+	 * Gets the progress bar.
+	 * @return	the progress bar.
+	 */
+	protected JProgressBar getProgressBar() {
+		return progressView.getProgressBar();
 	}
 
 	/* (non-Javadoc)
@@ -75,58 +89,86 @@ public class TestInterruption extends JFrame implements ActionListener {
 
 		// Play.
 		if (e.getSource() == play) {
-			if (animateProcess == null) {
+			if (process == null) {
 
-				progressView = new ProgressView();
-				getContentPane().add(progressView, BorderLayout.CENTER);
+				progressView.setVisible(true);
 
-				getContentPane().doLayout();
-				progressView.doLayout();
+				process = createProcess();
+				process.addPropertyChangeListener("realState", new RealStatePropertyListener());
 
-				animateProcess = new AnimateProcess(progressView);
-
-				new Thread(animateProcess).start();
+				new Thread(process).start();
 
 			} else {
-				animateProcess.restart();
+				process.resume();
 			}
 
 			// Pause.
 		} else if (e.getSource() == pause) {
-			animateProcess.pause();
+			process.pause();
 
 			// Stop.
 		} else if (e.getSource() == stop) {
-			animateProcess.cancel();
-			animateProcess = null;
+			process.cancel();
+			process = null;
+		}
+	}
 
-			getContentPane().remove(progressView);
-			progressView = null;
+	/*
+	 * Linsten to the state of the process.
+	 */
+	class RealStatePropertyListener implements PropertyChangeListener {
 
-			getContentPane().repaint();
+		/* (non-Javadoc)
+		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
+		 */
+		@Override
+		public void propertyChange(PropertyChangeEvent evt) {
+			refreshButtonsStatus();
 		}
 
-		refreshButtonsStatus();
 	}
 
 	/*
 	 * Refresh the status of the buttons.
 	 */
 	private void refreshButtonsStatus() {
-		if (animateProcess == null) {
+		if (process == null) {
+
+			progressView.setVisible(false);
+
 			refreshButtonsStatus(true, false, false);
 
 		} else {
 
-			if (animateProcess.isPaused()) {
+			switch (process.getRealState()) {
+				case AbstractInterruptibleRunnable.NOT_RUNNING:
+				case AbstractInterruptibleRunnable.CANCELED:
+
+					progressView.setVisible(false);
+
+					refreshButtonsStatus(true, false, false);
+					break;
+
+				case AbstractInterruptibleRunnable.RUNNING:
+					refreshButtonsStatus(false, true, true);
+					break;
+
+				case AbstractInterruptibleRunnable.PAUSED:
+					refreshButtonsStatus(true, false, true);
+					break;
+			}
+
+			/*
+			if (process.isPaused()) {
 				refreshButtonsStatus(true, false, true);
 
-			} else if (animateProcess.isCanceled()) { // Here will never reach for our sample.
+			} else if (process.isCanceled()) {
 				refreshButtonsStatus(true, false, false);
 
 			} else {
 				refreshButtonsStatus(false, true, true);
 			}
+			//*/
 		}
 	}
 
@@ -140,6 +182,106 @@ public class TestInterruption extends JFrame implements ActionListener {
 	}
 
 	/**
+	 * A progress view to see how the operations work.
+	 * 
+	 * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
+	 */
+	@SuppressWarnings("serial")
+	class ProgressView extends JPanel {
+
+		/*
+		 * The progress bar.
+		 */
+		private JProgressBar progressBar;
+
+		/**
+		 * Create the progress view.
+		 */
+		public ProgressView() {
+			super(new BorderLayout());
+
+			progressBar = new JProgressBar();
+
+			add(progressBar, BorderLayout.CENTER);
+
+			setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		}
+
+		/**
+		 * Gets the progress bar.
+		 * @return	the progress bar.
+		 */
+		public JProgressBar getProgressBar() {
+			return progressBar;
+		}
+
+		/* (non-Javadoc)
+		 * @see javax.swing.JComponent#setVisible(boolean)
+		 */
+		@Override
+		public void setVisible(boolean aFlag) {
+			super.setVisible(aFlag);
+
+			if (!aFlag) {
+				progressBar.setValue(progressBar.getMinimum());
+			}
+		}
+
+	}
+
+	/**
+	 * Create the process to run.
+	 * @return	the process to run.
+	 */
+	protected AbstractInterruptibleRunnable createProcess() {
+
+		/*
+		 * Inner class just to show how simple it is to create a process.
+		 */
+		return new AbstractInterruptibleRunnable() {
+
+			/*
+			 * The progress direction (1 for increase, -1 for decrease).
+			 */
+			private int direction = 1;
+
+			/* (non-Javadoc)
+			 * @see grape.simple.threads.AbstractInterruptibleRunnable#execute()
+			 */
+			@Override
+			protected void execute() {
+
+				// We're only doing a repetition here, which can be handled also simpler, only with a running state,
+				// but for complex processes this interruption mechanism using checkInterruption() will be quite handy.
+				while (true) {
+
+					int value = getProgressBar().getValue();
+
+					value += direction;
+
+					getProgressBar().setValue(value);
+
+					if (value == getProgressBar().getMaximum()) {
+						direction = -1;
+
+					} else if (value == getProgressBar().getMinimum()) {
+						direction = 1;
+					}
+
+					try {
+						Thread.sleep(50);
+					} catch (InterruptedException e) {
+					}
+
+					// Check if the process should be interrupted.
+					checkInterruption();
+				}
+
+			}
+		};
+	}
+
+	/**
 	 * Start the test app.
 	 */
 	public static void main(String[] args) {
@@ -149,115 +291,6 @@ public class TestInterruption extends JFrame implements ActionListener {
 		app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		app.setVisible(true);
-	}
-
-}
-
-/**
- * Simple animation process.
- * 
- * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
- */
-class AnimateProcess extends AbstractInterruptibleRunnable {
-
-	/*
-	 * The animation.
-	 */
-	private Animation animation;
-
-	/**
-	 * Create the animation process using the animation.
-	 * @param animation	the animation object.
-	 */
-	public AnimateProcess(Animation animation) {
-		this.animation = animation;
-	}
-
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.AbstractInterruptibleRunnable#execute()
-	 */
-	@Override
-	protected void execute() {
-
-		// We're only doing a repetition here, which can be handled also simpler, only with a running state,
-		// but for complex processes this interruption mechanism using checkInterruption() will be quite handy.
-		while (true) {
-
-			animation.animate();
-
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-			}
-
-			// Check if the process should be interrupted.
-			checkInterruption();
-		}
-
-	}
-}
-
-/**
- * Simple animation interface to animate one frame/call.
- * 
- * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
- */
-interface Animation {
-
-	/**
-	 * Animate one frame.
-	 */
-	void animate();
-}
-
-/**
- * A progress view to see how the operations work.
- * 
- * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
- */
-class ProgressView extends JPanel implements Animation {
-
-	private static final long serialVersionUID = 1L;
-
-	/*
-	 * The progress bar.
-	 */
-	private JProgressBar progressBar;
-
-	/**
-	 * Create the progress view.
-	 */
-	public ProgressView() {
-		super(new BorderLayout());
-
-		progressBar = new JProgressBar();
-
-		add(progressBar, BorderLayout.CENTER);
-
-		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-	}
-
-	/*
-	 * The progress direction (1 for increase, -1 for decrease).
-	 */
-	private int direction = 1;
-
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.test.Animation#animate()
-	 */
-	public void animate() {
-		int value = progressBar.getValue();
-
-		value += direction;
-
-		progressBar.setValue(value);
-
-		if (value == progressBar.getMaximum()) {
-			direction = -1;
-
-		} else if (value == progressBar.getMinimum()) {
-			direction = 1;
-		}
 	}
 
 }

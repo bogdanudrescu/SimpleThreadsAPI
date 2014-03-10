@@ -5,9 +5,8 @@ package grape.simple.threads;
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com) 
  */
+@SuppressWarnings("serial")
 public class CancelException extends RuntimeException {
-
-	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Create a simple exception.
