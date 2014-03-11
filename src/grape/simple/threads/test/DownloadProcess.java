@@ -9,7 +9,7 @@ import java.net.URL;
 import java.net.URLConnection;
 
 /**
- * Download a file.
+ * Process downloading a file.
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
  */
@@ -49,30 +49,6 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 	 * The URL connection.
 	 */
 	private URLConnection connection;
-
-	/*
-	 * The percent of downloaded data.
-	 */
-	private float percentCompleted;
-
-	/**
-	 * Gets the percent of download data so far.
-	 * @return	the percent of download data so far.
-	 */
-	public float getPercentCompleted() {
-		return percentCompleted;
-	}
-
-	/*
-	 * Sets the percent of download completion.
-	 */
-	private void setPercentCompleted(float percentCompleted) {
-		float oldPercentCompleted = this.percentCompleted;
-
-		this.percentCompleted = percentCompleted;
-
-		firePropertyChange("percentCompleted", oldPercentCompleted, this.percentCompleted);
-	}
 
 	/* (non-Javadoc)
 	 * @see grape.simple.threads.AbstractInterruptibleRunnable#execute()
@@ -123,20 +99,20 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 
 		System.out.println("Donwload finished.");
 
-		try {
-			if (outputStream != null) {
+		if (outputStream != null) {
+			try {
 				outputStream.close();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
-		try {
-			if (inputStream != null) {
+		if (inputStream != null) {
+			try {
 				inputStream.close();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 

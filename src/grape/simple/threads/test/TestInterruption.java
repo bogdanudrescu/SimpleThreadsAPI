@@ -139,8 +139,8 @@ public class TestInterruption extends JFrame implements ActionListener {
 		} else {
 
 			switch (process.getRealState()) {
-				case AbstractInterruptibleRunnable.NOT_RUNNING:
-				case AbstractInterruptibleRunnable.CANCELED:
+				case NOT_RUNNING:
+				case CANCELED:
 
 					process.destroy();
 					process = null;
@@ -149,11 +149,11 @@ public class TestInterruption extends JFrame implements ActionListener {
 					refreshButtonsStatus(true, false, false);
 					break;
 
-				case AbstractInterruptibleRunnable.RUNNING:
+				case RUNNING:
 					refreshButtonsStatus(false, true, true);
 					break;
 
-				case AbstractInterruptibleRunnable.PAUSED:
+				case PAUSED:
 					refreshButtonsStatus(true, false, true);
 					break;
 			}

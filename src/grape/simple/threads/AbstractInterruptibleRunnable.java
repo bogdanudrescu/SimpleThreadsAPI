@@ -1,5 +1,10 @@
 package grape.simple.threads;
 
+import static grape.simple.threads.InterruptibleRunnableState.CANCELED;
+import static grape.simple.threads.InterruptibleRunnableState.NOT_RUNNING;
+import static grape.simple.threads.InterruptibleRunnableState.PAUSED;
+import static grape.simple.threads.InterruptibleRunnableState.RUNNING;
+
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
@@ -16,7 +21,7 @@ import java.beans.PropertyChangeSupport;
  * A pause can be call off with a {@link #resume()} call.
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
- * @thanks Stefan Voinea (stefanvlad.voinea@gmail.com) 
+ * @thanks Stefan Voinea (stefanvlad.voinea@gmail.com)
  */
 public abstract class AbstractInterruptibleRunnable implements InterruptibleRunnable {
 
@@ -32,6 +37,9 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 		// initial state of the process. It's a bit weird to say that the initial state before running,
 		// is CANCELED, while the process never run.
 		synchronized (this) {
+
+			// FIXME Make it more clear that when a process gets CANCELED, in order to start it again, 
+			// the user must call resume, to set the state back to NOT_RUNNING.
 			if (realState == NOT_RUNNING) {
 				setState(RUNNING);
 				setRealState(RUNNING);
@@ -99,7 +107,7 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * We don't need this method abstract because some times you don't need to do any destruction at the end of the process.
 	 */
 	protected void executed() {
-		// Override this and perform any destruction. But do it fast, you don't need to keep this call to long.
+		// Override this and perform any destruction. But do it fast, you don't need to keep this call too long.
 		// 
 		// Any exception handling should be done by the implementor of this method.
 	}
@@ -143,35 +151,15 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 
 	}
 
-	/**
-	 * The initial state of the process.
-	 */
-	public final static int NOT_RUNNING = -1;
-
-	/**
-	 * The running state of the process.
-	 */
-	public final static int RUNNING = 0;
-
-	/**
-	 * The paused state of the process.
-	 */
-	public final static int PAUSED = 1;
-
-	/**
-	 * The canceled state of the process.
-	 */
-	public final static int CANCELED = 2;
-
 	/*
 	 * The state.
 	 */
-	private volatile int state = NOT_RUNNING;
+	private volatile InterruptibleRunnableState state = NOT_RUNNING;
 
 	/*
 	 * The real state, according with the exact time the process actually gets paused or canceled.
 	 */
-	private volatile int realState = NOT_RUNNING;
+	private volatile InterruptibleRunnableState realState = NOT_RUNNING;
 
 	/**
 	 * Gets the state of the process.
@@ -181,19 +169,8 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * @see #PAUSED
 	 * @see #CANCELED
 	 */
-	public int getState() {
+	public InterruptibleRunnableState getState() {
 		return state;
-	}
-
-	/*
-	 * Final call to set the state of the process.
-	 */
-	private void setState(int state) {
-		int oldState = this.state;
-
-		this.state = state;
-
-		firePropertyChange("state", oldState, state);
 	}
 
 	/**
@@ -204,15 +181,26 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 * @see #PAUSED
 	 * @see #CANCELED
 	 */
-	public int getRealState() {
+	public InterruptibleRunnableState getRealState() {
 		return realState;
+	}
+
+	/*
+	 * Final call to set the state of the process.
+	 */
+	private void setState(InterruptibleRunnableState state) {
+		InterruptibleRunnableState oldState = this.state;
+
+		this.state = state;
+
+		firePropertyChange("state", oldState, state);
 	}
 
 	/*
 	 * Final call to set the real state of the process.
 	 */
-	private void setRealState(int realState) {
-		int oldRealState = this.realState;
+	private void setRealState(InterruptibleRunnableState realState) {
+		InterruptibleRunnableState oldRealState = this.realState;
 
 		this.realState = realState;
 
@@ -362,6 +350,30 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
 		PropertyChangeSupport changeSupport = ensureChangeSupport();
 		changeSupport.addPropertyChangeListener(propertyName, listener);
+	}
+
+	/*
+	 * The percent of downloaded data.
+	 */
+	private float percentCompleted;
+
+	/* (non-Javadoc)
+	 * @see grape.simple.threads.InterruptibleRunnable#getPercentCompleted()
+	 */
+	public float getPercentCompleted() {
+		return percentCompleted;
+	}
+
+	/**
+	 * Sets the percent of process completion.
+	 * @param percentCompleted	the percent of completion.
+	 */
+	protected void setPercentCompleted(float percentCompleted) {
+		float oldPercentCompleted = this.percentCompleted;
+
+		this.percentCompleted = percentCompleted;
+
+		firePropertyChange("percentCompleted", oldPercentCompleted, this.percentCompleted);
 	}
 
 }

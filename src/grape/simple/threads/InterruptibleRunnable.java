@@ -1,5 +1,7 @@
 package grape.simple.threads;
 
+import java.beans.PropertyChangeListener;
+
 /**
  * Define cancel and pause functionalities to {@link Runnable}. The implementor of the <code>run()</code> method should check regularly 
  * if the runnable has been canceled using <code>isCanceled()</code> method and stop the execution of the process as soon as possible
@@ -8,24 +10,6 @@ package grape.simple.threads;
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com) 
  */
 public interface InterruptibleRunnable extends Runnable {
-
-	/**
-	 * Gets whether the process should cancel its execution.
-	 * @return	true if the process should stop.
-	 */
-	boolean isCanceled();
-
-	/**
-	 * Gets whether the process should paused its execution.
-	 * @return	true if the process should paused.
-	 */
-	boolean isPaused();
-
-	/**
-	 * Gets whether the process is running.
-	 * @return	true if the process is running.
-	 */
-	boolean isRunning();
 
 	/**
 	 * Cancel the current execution of this runnable.
@@ -41,6 +25,60 @@ public interface InterruptibleRunnable extends Runnable {
 	 * Restart the runnable.
 	 */
 	void resume();
+
+	/**
+	 * Gets the state of the process.
+	 * @return	the state of the process.
+	 * @see InterruptibleRunnableState
+	 */
+	public InterruptibleRunnableState getState();
+
+	/**
+	 * Gets the real state of the process.
+	 * @return	the real state of the process.
+	 * @see InterruptibleRunnableState
+	 */
+	public InterruptibleRunnableState getRealState();
+
+	/**
+	 * Register a listener that will be notified when the state of the process or any other property will change.
+	 * @param listener	the listener to be registered.
+	 */
+	public void addPropertyChangeListener(PropertyChangeListener listener);
+
+	/**
+	 * Register a listener that will be notified when the specified property will change.
+	 * @param propertyName	the name of the property.
+	 * @param listener		the listener to be registered.
+	 */
+	public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener);
+
+	/**
+	 * Gets the percent of download data so far.
+	 * @return	the percent of download data so far.
+	 */
+	public float getPercentCompleted();
+
+	/**
+	 * Gets whether the process should cancel its execution.
+	 * @return	true if the process should stop.
+	 * @deprecated	use {@link #getState()} or {@link #getRealState()}.
+	 */
+	boolean isCanceled();
+
+	/**
+	 * Gets whether the process should paused its execution.
+	 * @return	true if the process should paused.
+	 * @deprecated	use {@link #getState()} or {@link #getRealState()}.
+	 */
+	boolean isPaused();
+
+	/**
+	 * Gets whether the process is running.
+	 * @return	true if the process is running.
+	 * @deprecated	use {@link #getState()} or {@link #getRealState()}.
+	 */
+	boolean isRunning();
 
 	/**
 	 * Gets the name of the task.

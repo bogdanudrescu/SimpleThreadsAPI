@@ -51,13 +51,16 @@ public class TestInterruptionDownload extends TestInterruption {
 		panel.add(new JLabel("Download from "), c);
 
 		c.gridx = 1;
+		c.weightx = 1;
 		panel.add(urlTextField, c);
 
+		c.weightx = 0;
 		c.gridx = 0;
 		c.gridy = 1;
 		panel.add(new JLabel("Save as ..."), c);
 
 		c.gridx = 1;
+		c.weightx = 1;
 		panel.add(fileTextField, c);
 
 		getContentPane().add(panel, BorderLayout.CENTER);
@@ -98,7 +101,7 @@ public class TestInterruptionDownload extends TestInterruption {
 	public static void main(String[] args) {
 		TestInterruptionDownload app = new TestInterruptionDownload();
 
-		app.setBounds(100, 100, 600, 400);
+		app.setBounds(100, 100, 538, 300);
 		app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		app.setVisible(true);
