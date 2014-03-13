@@ -27,14 +27,16 @@ public interface InterruptibleRunnable extends Runnable {
 	void resume();
 
 	/**
-	 * Gets the state of the process.
+	 * Gets the state of the process as imposed by the user, by calling {@link #cancel()}, {@link #pause()} or {@link #resume()}.
 	 * @return	the state of the process.
 	 * @see InterruptibleRunnableState
 	 */
 	public InterruptibleRunnableState getState();
 
 	/**
-	 * Gets the real state of the process.
+	 * Gets the real state of the process. A process won't stop or paused right away when the {@link #pause()}, {@link #cancel()}
+	 * or {@link #resume()} are called. These methods must anyway be called from another Thread then the one executing the Runnable. 
+	 * So the process will get paused or canceled or resumed a bit later.
 	 * @return	the real state of the process.
 	 * @see InterruptibleRunnableState
 	 */
