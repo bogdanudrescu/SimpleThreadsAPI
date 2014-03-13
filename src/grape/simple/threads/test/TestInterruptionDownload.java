@@ -1,6 +1,6 @@
 package grape.simple.threads.test;
 
-import grape.simple.threads.AbstractInterruptibleRunnable;
+import grape.simple.threads.InterruptibleRunnable;
 
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
@@ -70,8 +70,8 @@ public class TestInterruptionDownload extends TestInterruption {
 	 * @see grape.simple.threads.test.TestInterruption#createProcess()
 	 */
 	@Override
-	protected AbstractInterruptibleRunnable createProcess() {
-		AbstractInterruptibleRunnable process = new DownloadProcess(urlTextField.getText(), fileTextField.getText());
+	protected InterruptibleRunnable createProcess() {
+		InterruptibleRunnable process = new DownloadProcess(urlTextField.getText(), fileTextField.getText());
 		process.addPropertyChangeListener("percentCompleted", new PercentCompletedListener());
 		return process;
 	}

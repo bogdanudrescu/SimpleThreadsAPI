@@ -63,11 +63,12 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 
 		// Read the lenght of the download content.
 		String contentLengthString = connection.getHeaderField("Content-Length");
+
+		checkInterruption(); // THIS IS THE TRICK
+
 		long contentLength = Long.parseLong(contentLengthString);
 
 		System.out.println("Connection established!");
-
-		checkInterruption();
 
 		// Gets the data from the input stream and puts it into the output stream.
 		inputStream = connection.getInputStream();
@@ -87,7 +88,7 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 			// Set the completed percent.
 			setPercentCompleted(100f * contentLengthRead / contentLength);
 
-			checkInterruption();
+			checkInterruption(); // THIS IS THE TRICK
 		}
 	}
 
@@ -97,7 +98,7 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 	@Override
 	protected void executed() {
 
-		System.out.println("Donwload finished.");
+		System.out.println("Download finished.");
 
 		if (outputStream != null) {
 			try {
@@ -121,11 +122,11 @@ public class DownloadProcess extends AbstractInterruptibleRunnable {
 	 */
 	@Override
 	public synchronized void cancel() {
+		super.cancel();
 
+		// THIS IS THE OTHER TRICK
 		connection.setConnectTimeout(1);
 		connection.setReadTimeout(1);
-
-		super.cancel();
 	}
 
 	/**

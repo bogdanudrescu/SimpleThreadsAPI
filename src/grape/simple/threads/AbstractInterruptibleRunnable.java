@@ -161,25 +161,15 @@ public abstract class AbstractInterruptibleRunnable implements InterruptibleRunn
 	 */
 	private volatile InterruptibleRunnableState realState = NOT_RUNNING;
 
-	/**
-	 * Gets the state of the process.
-	 * @return	the state of the process.
-	 * @see #NOT_RUNNING
-	 * @see #RUNNING
-	 * @see #PAUSED
-	 * @see #CANCELED
+	/* (non-Javadoc)
+	 * @see grape.simple.threads.InterruptibleRunnable#getState()
 	 */
 	public InterruptibleRunnableState getState() {
 		return state;
 	}
 
-	/**
-	 * Gets the real state of the process.
-	 * @return	the real state of the process.
-	 * @see #NOT_RUNNING
-	 * @see #RUNNING
-	 * @see #PAUSED
-	 * @see #CANCELED
+	/* (non-Javadoc)
+	 * @see grape.simple.threads.InterruptibleRunnable#getRealState()
 	 */
 	public InterruptibleRunnableState getRealState() {
 		return realState;

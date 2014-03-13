@@ -1,6 +1,7 @@
 package grape.simple.threads.test;
 
 import grape.simple.threads.AbstractInterruptibleRunnable;
+import grape.simple.threads.InterruptibleRunnable;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
@@ -33,7 +34,7 @@ public class TestInterruption extends JFrame implements ActionListener {
 	/*
 	 * A process doing something.
 	 */
-	private AbstractInterruptibleRunnable process;
+	private InterruptibleRunnable process;
 
 	/*
 	 * The progress view reference.
@@ -233,7 +234,7 @@ public class TestInterruption extends JFrame implements ActionListener {
 	 * Create the process to run.
 	 * @return	the process to run.
 	 */
-	protected AbstractInterruptibleRunnable createProcess() {
+	protected InterruptibleRunnable createProcess() {
 
 		/*
 		 * Inner class just to show how simple it is to create a process.
