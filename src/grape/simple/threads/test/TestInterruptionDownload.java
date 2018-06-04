@@ -1,7 +1,5 @@
 package grape.simple.threads.test;
 
-import grape.simple.threads.InterruptibleRunnable;
-
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -14,97 +12,105 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import grape.simple.threads.InterruptibleRunnable;
+
 /**
- * A bit more complex test involving the download of a file and save it on the disk.
+ * A bit more complex test involving the download of a file and save it on the
+ * disk.
  * 
  * @author Bogdan Udrescu (bogdan.udrescu@gmail.com)
  */
 @SuppressWarnings("serial")
 public class TestInterruptionDownload extends TestInterruption {
 
-	/*
-	 * Text field holding the url to download.
-	 */
-	private JTextField urlTextField;
+    /*
+     * Text field holding the url to download.
+     */
+    private JTextField urlTextField;
 
-	/*
-	 * Text field holding the file name where to save the download data.
-	 */
-	private JTextField fileTextField;
+    /*
+     * Text field holding the file name where to save the download data.
+     */
+    private JTextField fileTextField;
 
-	/**
-	 * Create a simple test to download a file.
-	 */
-	public TestInterruptionDownload() {
-		setTitle("URL Download Interruption Test");
+    /**
+     * Create a simple test to download a file.
+     */
+    public TestInterruptionDownload() {
+        setTitle("URL Download Interruption Test");
 
-		urlTextField = new JTextField("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz");
-		fileTextField = new JTextField("foo.dat");
+        urlTextField = new JTextField("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz");
+        fileTextField = new JTextField("foo.dat");
 
-		JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
 
-		GridBagConstraints c = new GridBagConstraints();
-		c.insets = new Insets(5, 5, 5, 5);
-		c.anchor = GridBagConstraints.WEST;
-		c.fill = GridBagConstraints.BOTH;
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(5, 5, 5, 5);
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.BOTH;
 
-		panel.add(new JLabel("Download from "), c);
+        panel.add(new JLabel("Download from "), c);
 
-		c.gridx = 1;
-		c.weightx = 1;
-		panel.add(urlTextField, c);
+        c.gridx = 1;
+        c.weightx = 1;
+        panel.add(urlTextField, c);
 
-		c.weightx = 0;
-		c.gridx = 0;
-		c.gridy = 1;
-		panel.add(new JLabel("Save as ..."), c);
+        c.weightx = 0;
+        c.gridx = 0;
+        c.gridy = 1;
+        panel.add(new JLabel("Save as ..."), c);
 
-		c.gridx = 1;
-		c.weightx = 1;
-		panel.add(fileTextField, c);
+        c.gridx = 1;
+        c.weightx = 1;
+        panel.add(fileTextField, c);
 
-		getContentPane().add(panel, BorderLayout.CENTER);
-	}
+        getContentPane().add(panel, BorderLayout.CENTER);
+    }
 
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.test.TestInterruption#createProcess()
-	 */
-	@Override
-	protected InterruptibleRunnable createProcess() {
-		InterruptibleRunnable process = new DownloadProcess(urlTextField.getText(), fileTextField.getText());
-		process.addPropertyChangeListener("percentCompleted", new PercentCompletedListener());
-		return process;
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see grape.simple.threads.test.TestInterruption#createProcess()
+     */
+    @Override
+    protected InterruptibleRunnable createProcess() {
+        InterruptibleRunnable process = new DownloadProcess(urlTextField.getText(), fileTextField.getText());
+        process.addPropertyChangeListener("percentCompleted", new PercentCompletedListener());
+        return process;
+    }
 
-	/*
-	 * Listen to complete download percent and notify the progress bar.
-	 */
-	class PercentCompletedListener implements PropertyChangeListener {
+    /*
+     * Listen to complete download percent and notify the progress bar.
+     */
+    class PercentCompletedListener implements PropertyChangeListener {
 
-		/* (non-Javadoc)
-		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
-		 */
-		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
-			if (evt.getPropertyName().equals("percentCompleted")) {
+        /*
+         * (non-Javadoc)
+         * 
+         * @see java.beans.PropertyChangeListener#propertyChange(java.beans.
+         * PropertyChangeEvent)
+         */
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            if (evt.getPropertyName().equals("percentCompleted")) {
 
-				Number percent = (Number) evt.getNewValue();
-				getProgressBar().setValue(percent.intValue());
-			}
-		}
+                Number percent = (Number) evt.getNewValue();
+                getProgressBar().setValue(percent.intValue());
+            }
+        }
 
-	}
+    }
 
-	/**
-	 * Start the test app.
-	 */
-	public static void main(String[] args) {
-		TestInterruptionDownload app = new TestInterruptionDownload();
+    /**
+     * Start the test app.
+     */
+    public static void main(String[] args) {
+        TestInterruptionDownload app = new TestInterruptionDownload();
 
-		app.setBounds(100, 100, 538, 300);
-		app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        app.setBounds(100, 100, 538, 300);
+        app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		app.setVisible(true);
-	}
+        app.setVisible(true);
+    }
 
 }

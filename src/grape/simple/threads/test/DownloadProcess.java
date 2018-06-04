@@ -1,12 +1,12 @@
 package grape.simple.threads.test;
 
-import grape.simple.threads.AbstractInterruptibleRunnable;
-
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+
+import grape.simple.threads.AbstractInterruptibleRunnable;
 
 /**
  * Process downloading a file.
@@ -15,125 +15,136 @@ import java.net.URLConnection;
  */
 public class DownloadProcess extends AbstractInterruptibleRunnable {
 
-	/*
-	 * The url to download.
-	 */
-	private String urlToDownload;
+    /*
+     * The url to download.
+     */
+    private String urlToDownload;
 
-	/*
-	 * The name of the file where to store the downloaded data.
-	 */
-	private String fileNameToStore;
+    /*
+     * The name of the file where to store the downloaded data.
+     */
+    private String fileNameToStore;
 
-	/**
-	 * Create a process to download a file and store it on the hdd.
-	 * @param urlToDownload		the url to download.
-	 * @param fileNameToStore	the name of the file where to store the downloaded data.
-	 */
-	public DownloadProcess(String urlToDownload, String fileNameToStore) {
-		this.urlToDownload = urlToDownload;
-		this.fileNameToStore = fileNameToStore;
-	}
+    /**
+     * Create a process to download a file and store it on the hdd.
+     * 
+     * @param urlToDownload
+     *            the url to download.
+     * @param fileNameToStore
+     *            the name of the file where to store the downloaded data.
+     */
+    public DownloadProcess(String urlToDownload, String fileNameToStore) {
+        this.urlToDownload = urlToDownload;
+        this.fileNameToStore = fileNameToStore;
+    }
 
-	/*
-	 * The input stream to read the data from.
-	 */
-	private InputStream inputStream;
+    /*
+     * The input stream to read the data from.
+     */
+    private InputStream inputStream;
 
-	/*
-	 * The output stream to write the data to.
-	 */
-	private OutputStream outputStream;
+    /*
+     * The output stream to write the data to.
+     */
+    private OutputStream outputStream;
 
-	/*
-	 * The URL connection.
-	 */
-	private URLConnection connection;
+    /*
+     * The URL connection.
+     */
+    private URLConnection connection;
 
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.AbstractInterruptibleRunnable#execute()
-	 */
-	@Override
-	protected void execute() throws Exception {
-		URL url = new URL(urlToDownload);
+    /*
+     * (non-Javadoc)
+     * 
+     * @see grape.simple.threads.AbstractInterruptibleRunnable#execute()
+     */
+    @Override
+    protected void execute() throws Exception {
+        URL url = new URL(urlToDownload);
 
-		connection = url.openConnection();
+        connection = url.openConnection();
 
-		System.out.println("Connecting to " + urlToDownload);
+        System.out.println("Connecting to " + urlToDownload);
 
-		// Read the lenght of the download content.
-		String contentLengthString = connection.getHeaderField("Content-Length");
+        // Read the lenght of the download content.
+        String contentLengthString = connection.getHeaderField("Content-Length");
 
-		checkInterruption(); // THIS IS THE TRICK
+        checkInterruption(); // THIS IS THE TRICK
 
-		long contentLength = Long.parseLong(contentLengthString);
+        long contentLength = Long.parseLong(contentLengthString);
 
-		System.out.println("Connection established!");
+        System.out.println("Connection established!");
 
-		// Gets the data from the input stream and puts it into the output stream.
-		inputStream = connection.getInputStream();
-		outputStream = new FileOutputStream(fileNameToStore);
+        // Gets the data from the input stream and puts it into the output
+        // stream.
+        inputStream = connection.getInputStream();
+        outputStream = new FileOutputStream(fileNameToStore);
 
-		byte[] bytes = new byte[4096];
-		int length = -1;
-		long contentLengthRead = 0;
+        byte[] bytes = new byte[4096];
+        int length = -1;
+        long contentLengthRead = 0;
 
-		while ((length = inputStream.read(bytes)) != -1) {
+        while ((length = inputStream.read(bytes)) != -1) {
 
-			outputStream.write(bytes, 0, length);
-			outputStream.flush();
+            outputStream.write(bytes, 0, length);
+            outputStream.flush();
 
-			contentLengthRead += length;
+            contentLengthRead += length;
 
-			// Set the completed percent.
-			setPercentCompleted(100f * contentLengthRead / contentLength);
+            // Set the completed percent.
+            setPercentCompleted(100f * contentLengthRead / contentLength);
 
-			checkInterruption(); // THIS IS THE TRICK
-		}
-	}
+            checkInterruption(); // THIS IS THE TRICK
+        }
+    }
 
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.AbstractInterruptibleRunnable#executed()
-	 */
-	@Override
-	protected void executed() {
+    /*
+     * (non-Javadoc)
+     * 
+     * @see grape.simple.threads.AbstractInterruptibleRunnable#executed()
+     */
+    @Override
+    protected void executed() {
 
-		System.out.println("Download finished.");
+        System.out.println("Download finished.");
 
-		if (outputStream != null) {
-			try {
-				outputStream.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+        if (outputStream != null) {
+            try {
+                outputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
-		if (inputStream != null) {
-			try {
-				inputStream.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
+        if (inputStream != null) {
+            try {
+                inputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-	/* (non-Javadoc)
-	 * @see grape.simple.threads.AbstractInterruptibleRunnable#cancel()
-	 */
-	@Override
-	public synchronized void cancel() {
-		super.cancel();
+    /*
+     * (non-Javadoc)
+     * 
+     * @see grape.simple.threads.AbstractInterruptibleRunnable#cancel()
+     */
+    @Override
+    public synchronized void cancel() {
+        super.cancel();
 
-		// THIS IS THE OTHER TRICK
-		connection.setConnectTimeout(1);
-		connection.setReadTimeout(1);
-	}
+        // THIS IS THE OTHER TRICK
+        connection.setConnectTimeout(1);
+        connection.setReadTimeout(1);
+    }
 
-	/**
-	 * Test url download.
-	 */
-	public static void main(String[] args) {
-		new Thread(new DownloadProcess("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz", "test.dat")).start();
-	}
+    /**
+     * Test url download.
+     */
+    public static void main(String[] args) {
+        new Thread(new DownloadProcess("http://mirrors.hostingromania.ro/apache.org//httpd/httpd-2.2.26.tar.gz",
+                "test.dat")).start();
+    }
 
 }
